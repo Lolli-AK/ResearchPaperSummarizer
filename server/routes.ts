@@ -35,8 +35,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { arxivUrl } = req.body;
       const file = req.file;
 
+      // Debug logging
+      console.log('Request body:', req.body);
+      console.log('Request file:', req.file);
+      console.log('ArxivUrl:', arxivUrl);
+
       // Validate input
       if (!file && !arxivUrl) {
+        console.log('Validation failed: No file and no arxivUrl');
         return res.status(400).json({ 
           message: "Either PDF file or arXiv URL must be provided" 
         });
