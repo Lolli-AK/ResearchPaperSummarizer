@@ -130,6 +130,7 @@ export function UploadSection({ onProcessingStart, onAnalysisComplete }: UploadS
   ];
 
   const loadExamplePaper = (url: string) => {
+    console.log('Loading example paper:', url);
     setArxivUrl(url);
     setSelectedFile(null);
   };
