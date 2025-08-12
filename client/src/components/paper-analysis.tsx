@@ -32,33 +32,65 @@ export function PaperAnalysis({ analysisData }: PaperAnalysisProps) {
   const { paper, analysis } = analysisData;
 
   const exportAnalysis = () => {
-    const exportData = {
-      paper: {
-        title: paper.title,
-        authors: paper.authors,
-        analyzedDate: new Date(paper.createdAt).toLocaleDateString()
-      },
-      analysis: {
-        overview: analysis.overview,
-        sections: analysis.sections,
-        keyConcepts: analysis.keyConcepts,
-        complexity: analysis.complexity,
-        readingTime: analysis.readingTime,
-        totalCost: analysis.totalCost
-      }
-    };
+    console.log('Export button clicked!');
+    console.log('Paper data:', paper);
+    console.log('Analysis data:', analysis);
     
-    const blob = new Blob([JSON.stringify(exportData, null, 2)], { 
-      type: 'application/json' 
-    });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `${paper.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_analysis.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    try {
+      const exportData = {
+        paper: {
+          title: paper.title,
+          authors: paper.authors,
+          analyzedDate: new Date(paper.createdAt).toLocaleDateString()
+        },
+        analysis: {
+          overview: analysis.overview,
+          sections: analysis.sections,
+          keyConcepts: analysis.keyConcepts,
+          complexity: analysis.complexity,
+          readingTime: analysis.readingTime,
+          totalCost: analysis.totalCost
+        }
+      };
+      
+      console.log('Export data prepared:', exportData);
+      
+      const jsonString = JSON.stringify(exportData, null, 2);
+      console.log('JSON string length:', jsonString.length);
+      
+      const blob = new Blob([jsonString], { 
+        type: 'application/json' 
+      });
+      
+      const url = URL.createObjectURL(blob);
+      const filename = `${paper.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_analysis.json`;
+      
+      console.log('Creating download link with filename:', filename);
+      
+      // Simple and reliable blob download method
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      
+      console.log('Triggering download via blob method...');
+      a.click();
+      
+      // Clean up
+      setTimeout(() => {
+        if (document.body.contains(a)) {
+          document.body.removeChild(a);
+        }
+        URL.revokeObjectURL(url);
+        console.log('Cleanup completed');
+      }, 100);
+      
+    } catch (error) {
+      console.error('Export failed:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      alert('Export failed: ' + errorMessage);
+    }
   };
 
   const scrollToSection = (sectionId: string) => {
