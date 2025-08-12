@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PaperSidebar } from "./paper-sidebar";
+import { DiagramGenerator } from "./diagram-generator";
 
 interface PaperAnalysisProps {
   analysisData: {
@@ -29,6 +30,36 @@ interface PaperAnalysisProps {
 export function PaperAnalysis({ analysisData }: PaperAnalysisProps) {
   const [activeSection, setActiveSection] = useState("overview");
   const { paper, analysis } = analysisData;
+
+  const exportAnalysis = () => {
+    const exportData = {
+      paper: {
+        title: paper.title,
+        authors: paper.authors,
+        analyzedDate: new Date(paper.createdAt).toLocaleDateString()
+      },
+      analysis: {
+        overview: analysis.overview,
+        sections: analysis.sections,
+        keyConcepts: analysis.keyConcepts,
+        complexity: analysis.complexity,
+        readingTime: analysis.readingTime,
+        totalCost: analysis.totalCost
+      }
+    };
+    
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { 
+      type: 'application/json' 
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${paper.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_analysis.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
 
   const scrollToSection = (sectionId: string) => {
     setActiveSection(sectionId);
@@ -68,7 +99,7 @@ export function PaperAnalysis({ analysisData }: PaperAnalysisProps) {
                 </div>
               </div>
               <div className="flex space-x-2">
-                <Button className="bg-academic-blue hover:bg-blue-700">
+                <Button onClick={exportAnalysis} className="bg-academic-blue hover:bg-blue-700">
                   <i className="fas fa-download mr-1"></i>Export Analysis
                 </Button>
                 <Button variant="outline">
@@ -193,6 +224,18 @@ export function PaperAnalysis({ analysisData }: PaperAnalysisProps) {
                     ))}
                   </div>
                 </div>
+              )}
+
+              {/* Add diagram for sections with key concepts or technical content */}
+              {(section.keyConcepts || section.title.toLowerCase().includes('attention') || 
+                section.title.toLowerCase().includes('transformer') || 
+                section.title.toLowerCase().includes('architecture')) && (
+                <DiagramGenerator 
+                  sectionTitle={section.title}
+                  sectionContent={section.explanation || section.originalContent || ""}
+                  keyConcepts={section.keyConcepts || analysis.keyConcepts.slice(0, 6)}
+                  paperTitle={paper.title}
+                />
               )}
             </CardContent>
           </Card>
