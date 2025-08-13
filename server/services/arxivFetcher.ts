@@ -31,10 +31,21 @@ export async function fetchArxivPaper(arxivUrl: string): Promise<ParsedPaperCont
       // Parse the PDF
       const parsedContent = await parsePDF(pdfPath);
       
-      // Override with arXiv metadata where available
+      // Debug logging to see what we get
+      console.log("arXiv metadata title length:", metadata.title?.length);
+      console.log("PDF parsed title:", parsedContent.title);
+      console.log("arXiv metadata title preview:", metadata.title?.substring(0, 100));
+      
+      // Only use arXiv metadata if it's reasonable (not the entire paper content)
+      const useArxivTitle = metadata.title && 
+                           metadata.title.length < 200 && 
+                           metadata.title.length > 5 &&
+                           !metadata.title.includes('\n') &&
+                           metadata.title.split(' ').length <= 20;
+      
       return {
         ...parsedContent,
-        title: metadata.title || parsedContent.title,
+        title: useArxivTitle ? metadata.title : parsedContent.title,
         authors: metadata.authors.join(', ') || parsedContent.authors,
         abstract: metadata.abstract || parsedContent.abstract,
       };

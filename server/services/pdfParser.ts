@@ -60,6 +60,12 @@ export async function parsePDF(filePath: string): Promise<ParsedPaperContent> {
         .sort((a: any, b: any) => b.y - a.y) // Sort by position (top to bottom)
         .slice(0, 20); // Look at only first 20 text elements
       
+      // Debug: log the top elements to see what we're working with
+      console.log("Top elements from PDF first page:");
+      topElements.slice(0, 5).forEach((item, i) => {
+        console.log(`${i}: "${item.str.trim()}" (length: ${item.str.trim().length})`);
+      });
+      
       // Find title by looking for meaningful text in large font at the top
       for (const item of topElements) {
         const text = item.str.trim();
@@ -77,6 +83,7 @@ export async function parsePDF(filePath: string): Promise<ParsedPaperContent> {
                              text.split(' ').length <= 15; // Not too many words
         
         if (isLikelyTitle) {
+          console.log("Selected PDF title:", text);
           title = text;
           break; // Take the first match
         }
