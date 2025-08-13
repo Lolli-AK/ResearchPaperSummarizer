@@ -3,6 +3,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PaperSidebar } from "./paper-sidebar";
 import { DiagramGenerator } from "./diagram-generator";
+import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 
 interface PaperAnalysisProps {
   analysisData: {
@@ -31,65 +33,145 @@ export function PaperAnalysis({ analysisData }: PaperAnalysisProps) {
   const [activeSection, setActiveSection] = useState("overview");
   const { paper, analysis } = analysisData;
 
-  const exportAnalysis = () => {
-    console.log('Export button clicked!');
-    console.log('Paper data:', paper);
-    console.log('Analysis data:', analysis);
+  const exportAnalysis = async () => {
+    console.log('Generating PDF export...');
     
     try {
-      const exportData = {
-        paper: {
-          title: paper.title,
-          authors: paper.authors,
-          analyzedDate: new Date(paper.createdAt).toLocaleDateString()
-        },
-        analysis: {
-          overview: analysis.overview,
-          sections: analysis.sections,
-          keyConcepts: analysis.keyConcepts,
-          complexity: analysis.complexity,
-          readingTime: analysis.readingTime,
-          totalCost: analysis.totalCost
+      // Create a new PDF document
+      const pdf = new jsPDF('p', 'pt', 'a4');
+      const pageWidth = pdf.internal.pageSize.getWidth();
+      const pageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 40;
+      let yPosition = margin;
+      
+      // Title page
+      pdf.setFontSize(24);
+      pdf.setFont('helvetica', 'bold');
+      const titleLines = pdf.splitTextToSize(paper.title, pageWidth - 2 * margin);
+      pdf.text(titleLines, margin, yPosition);
+      yPosition += titleLines.length * 30;
+      
+      // Authors
+      yPosition += 20;
+      pdf.setFontSize(14);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text(`Authors: ${paper.authors}`, margin, yPosition);
+      yPosition += 30;
+      
+      // Analysis date
+      pdf.text(`Analysis Date: ${new Date(paper.createdAt).toLocaleDateString()}`, margin, yPosition);
+      yPosition += 30;
+      
+      // Analysis metadata
+      pdf.setFontSize(12);
+      pdf.text(`Complexity: ${analysis.complexity} | Reading Time: ${analysis.readingTime} | Cost: $${analysis.totalCost}`, margin, yPosition);
+      yPosition += 40;
+      
+      // Overview section
+      pdf.setFontSize(18);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Overview', margin, yPosition);
+      yPosition += 25;
+      
+      pdf.setFontSize(11);
+      pdf.setFont('helvetica', 'normal');
+      const overviewLines = pdf.splitTextToSize(analysis.overview, pageWidth - 2 * margin);
+      
+      // Handle page breaks
+      if (yPosition + overviewLines.length * 15 > pageHeight - margin) {
+        pdf.addPage();
+        yPosition = margin;
+      }
+      
+      pdf.text(overviewLines, margin, yPosition);
+      yPosition += overviewLines.length * 15 + 30;
+      
+      // Key Concepts section
+      if (yPosition > pageHeight - 150) {
+        pdf.addPage();
+        yPosition = margin;
+      }
+      
+      pdf.setFontSize(16);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Key Concepts', margin, yPosition);
+      yPosition += 25;
+      
+      pdf.setFontSize(11);
+      pdf.setFont('helvetica', 'normal');
+      const conceptsText = analysis.keyConcepts.join(' • ');
+      const conceptLines = pdf.splitTextToSize(conceptsText, pageWidth - 2 * margin);
+      pdf.text(conceptLines, margin, yPosition);
+      yPosition += conceptLines.length * 15 + 30;
+      
+      // Sections
+      for (let i = 0; i < analysis.sections.length; i++) {
+        const section = analysis.sections[i];
+        
+        // Check if we need a new page
+        if (yPosition > pageHeight - 200) {
+          pdf.addPage();
+          yPosition = margin;
         }
-      };
-      
-      console.log('Export data prepared:', exportData);
-      
-      const jsonString = JSON.stringify(exportData, null, 2);
-      console.log('JSON string length:', jsonString.length);
-      
-      const blob = new Blob([jsonString], { 
-        type: 'application/json' 
-      });
-      
-      const url = URL.createObjectURL(blob);
-      const filename = `${paper.title.replace(/[^a-z0-9]/gi, '_').toLowerCase()}_analysis.json`;
-      
-      console.log('Creating download link with filename:', filename);
-      
-      // Simple and reliable blob download method
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = filename;
-      a.style.display = 'none';
-      document.body.appendChild(a);
-      
-      console.log('Triggering download via blob method...');
-      a.click();
-      
-      // Clean up
-      setTimeout(() => {
-        if (document.body.contains(a)) {
-          document.body.removeChild(a);
+        
+        // Section title
+        pdf.setFontSize(16);
+        pdf.setFont('helvetica', 'bold');
+        pdf.text(`${i + 1}. ${section.title || `Section ${i + 1}`}`, margin, yPosition);
+        yPosition += 25;
+        
+        // Section explanation
+        pdf.setFontSize(11);
+        pdf.setFont('helvetica', 'normal');
+        const explanation = section.explanation || 'No explanation available';
+        const explanationLines = pdf.splitTextToSize(explanation, pageWidth - 2 * margin);
+        
+        // Handle page breaks for long sections
+        if (yPosition + explanationLines.length * 15 > pageHeight - margin) {
+          pdf.addPage();
+          yPosition = margin;
         }
-        URL.revokeObjectURL(url);
-        console.log('Cleanup completed');
-      }, 100);
+        
+        pdf.text(explanationLines, margin, yPosition);
+        yPosition += explanationLines.length * 15;
+        
+        // Original content (if available)
+        if (section.originalContent) {
+          yPosition += 15;
+          pdf.setFontSize(10);
+          pdf.setFont('helvetica', 'italic');
+          pdf.text('Original Content:', margin, yPosition);
+          yPosition += 15;
+          
+          const originalLines = pdf.splitTextToSize(
+            section.originalContent.substring(0, 500) + (section.originalContent.length > 500 ? '...' : ''),
+            pageWidth - 2 * margin
+          );
+          
+          if (yPosition + originalLines.length * 12 > pageHeight - margin) {
+            pdf.addPage();
+            yPosition = margin;
+          }
+          
+          pdf.text(originalLines, margin, yPosition);
+          yPosition += originalLines.length * 12;
+        }
+        
+        yPosition += 25; // Space between sections
+      }
+      
+      // Generate filename
+      const safeTitle = paper.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+      const filename = `${safeTitle}_analysis.pdf`;
+      
+      // Save the PDF
+      pdf.save(filename);
+      console.log('PDF generated successfully!');
       
     } catch (error) {
-      console.error('Export failed:', error);
+      console.error('PDF generation failed:', error);
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-      alert('Export failed: ' + errorMessage);
+      alert('PDF export failed: ' + errorMessage);
     }
   };
 
