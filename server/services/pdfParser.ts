@@ -62,30 +62,57 @@ export async function parsePDF(filePath: string): Promise<ParsedPaperContent> {
       
       // Debug: log the top elements to see what we're working with
       console.log("Top elements from PDF first page:");
-      topElements.slice(0, 5).forEach((item, i) => {
+      topElements.slice(0, 8).forEach((item, i) => {
         console.log(`${i}: "${item.str.trim()}" (length: ${item.str.trim().length})`);
       });
       
       // Find title by looking for meaningful text in large font at the top
-      for (const item of topElements) {
+      // Look for the LARGEST text elements first (titles are usually biggest)
+      const elementsWithSize = topElements.map((item: any) => ({
+        ...item,
+        textSize: item.height || 12 // Use height as proxy for font size
+      })).sort((a: any, b: any) => b.textSize - a.textSize);
+      
+      console.log("Elements sorted by size:");
+      elementsWithSize.slice(0, 5).forEach((item: any, i) => {
+        console.log(`${i}: "${item.str.trim()}" (size: ${item.textSize}, length: ${item.str.trim().length})`);
+      });
+      
+      // Try to find title among the largest text elements
+      for (const item of elementsWithSize) {
         const text = item.str.trim();
-        const isLikelyTitle = text.length >= 10 && 
-                             text.length <= 100 && 
+        const isLikelyTitle = text.length >= 8 && 
+                             text.length <= 120 && 
                              !text.toLowerCase().includes('arxiv') &&
                              !text.toLowerCase().includes('preprint') &&
                              !text.toLowerCase().includes('abstract') &&
                              !text.toLowerCase().includes('cs.') && // arXiv categories
+                             !text.toLowerCase().includes('submitted') &&
+                             !text.toLowerCase().includes('conference') &&
                              !text.match(/^\d{4}\.\d{4,5}/) && // arXiv ID pattern
-                             !text.match(/^[A-Z]{2,}$/) && // Not just abbreviations
+                             !text.match(/^[A-Z]{2,}$/) && // Not just abbreviations  
                              !text.match(/^\d+$/) && // Not just numbers
                              !text.match(/^[^a-zA-Z]*$/) && // Must contain letters
+                             !text.match(/^\s*\d+\s*$/) && // Not just page numbers
                              text.split(' ').length >= 2 && // At least 2 words
-                             text.split(' ').length <= 15; // Not too many words
+                             text.split(' ').length <= 20; // Not too many words
         
         if (isLikelyTitle) {
           console.log("Selected PDF title:", text);
           title = text;
           break; // Take the first match
+        }
+      }
+      
+      // If still no title found, try the position-based approach  
+      if (title === "Research Paper") {
+        for (const item of topElements.slice(0, 10)) {
+          const text = item.str.trim();
+          if (text.length >= 8 && text.length <= 120 && text.split(' ').length >= 2) {
+            console.log("Fallback title selection:", text);
+            title = text;
+            break;
+          }
         }
       }
       
