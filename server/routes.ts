@@ -70,7 +70,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Store paper in database
       const paper = await storage.createPaper({
-        title: parsedContent.title,
+        title: parsedContent.title || "Research Paper", // Fallback title
         authors: parsedContent.authors,
         arxivUrl: arxivUrl || null,
         fileName: fileName,
@@ -84,7 +84,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Analyze with OpenAI (this could be moved to a background job in production)
       const analysisResult = await analyzePaperWithGPT(
         parsedContent.content,
-        parsedContent.title,
+        parsedContent.title || "Research Paper",
         parsedContent.authors
       );
 

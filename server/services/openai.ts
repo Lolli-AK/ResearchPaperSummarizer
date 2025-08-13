@@ -74,9 +74,9 @@ function chunkText(text: string, maxTokens: number = 20000): string[] {
 
 export async function analyzePaperWithGPT(
   paperContent: string,
-  title: string,
+  originalTitle: string,
   authors?: string
-): Promise<PaperAnalysisResult> {
+): Promise<PaperAnalysisResult & { generatedTitle: string }> {
   const startTime = Date.now();
 
   try {
@@ -100,15 +100,16 @@ export async function analyzePaperWithGPT(
         messages: [
           {
             role: "system",
-            content: `You are an expert AI tutor specializing in transformer and attention mechanism research papers. 
+            content: `You are an expert AI tutor specializing in research papers. 
             Analyze research papers and provide comprehensive, clear explanations suitable for students and researchers.
             Focus on breaking down complex concepts into understandable explanations.
             
-            ${isFirstChunk ? `This is the first part of the paper. Provide a complete overview and initial analysis.` : `This is part ${i + 1} of ${chunks.length} of the paper. Focus on section-specific analysis.`}
+            ${isFirstChunk ? `This is the first part of the paper. Provide a complete overview, initial analysis, and generate a clear, concise title based on the content.` : `This is part ${i + 1} of ${chunks.length} of the paper. Focus on section-specific analysis.`}
             
             Respond in JSON format with the following structure:
             {
-              ${isFirstChunk ? `"overview": "comprehensive overview of the paper's contributions and significance",
+              ${isFirstChunk ? `"generatedTitle": "a clear, concise title (5-15 words) that captures the main contribution of this paper",
+              "overview": "comprehensive overview of the paper's contributions and significance",
               "complexity": "Beginner/Intermediate/Advanced",
               "readingTime": "estimated reading time in minutes",` : ''}
               "keyConcepts": ["array", "of", "key", "concepts"],
@@ -126,7 +127,7 @@ export async function analyzePaperWithGPT(
             role: "user",
             content: `Please analyze this ${isFirstChunk ? 'research paper' : 'section of the research paper'} and provide a comprehensive educational breakdown:
 
-Title: ${title}
+Title: ${originalTitle || 'Research Paper'}
 Authors: ${authors || "Not specified"}
 ${isFirstChunk ? '' : `\nNote: This is part ${i + 1} of ${chunks.length} of the full paper.`}
 
@@ -154,6 +155,11 @@ Provide detailed explanations that would help a student understand complex conce
         overview = chunkResult.overview || "Comprehensive analysis of transformer architecture and attention mechanisms.";
         complexity = chunkResult.complexity || "Advanced";
         readingTime = chunkResult.readingTime || "20 min";
+        
+        // Extract generated title from first chunk
+        if (chunkResult.generatedTitle) {
+          console.log("Generated title from content:", chunkResult.generatedTitle);
+        }
       }
       
       allSections = allSections.concat(chunkResult.sections || []);
@@ -174,6 +180,32 @@ Provide detailed explanations that would help a student understand complex conce
 
     const analysisTime = ((Date.now() - startTime) / 1000).toFixed(1); // seconds
 
+    // Extract generated title from the first chunk if available
+    let generatedTitle = originalTitle || "Research Paper Analysis";
+    if (allSections.length > 0) {
+      // Try to create a better title from the analysis
+      const firstResponse = await openai.chat.completions.create({
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: "Generate a clear, concise academic paper title (5-15 words) based on the content analysis. Respond with just the title."
+          },
+          {
+            role: "user", 
+            content: `Create a proper title for this research paper based on this analysis:\n\nOverview: ${overview}\n\nKey concepts: ${keyConcepts.slice(0, 5).join(', ')}`
+          }
+        ],
+        max_tokens: 50
+      });
+      
+      const titleResponse = firstResponse.choices[0].message.content?.trim();
+      if (titleResponse && titleResponse.length > 10 && titleResponse.length < 150) {
+        generatedTitle = titleResponse;
+        console.log("AI-generated title:", generatedTitle);
+      }
+    }
+
     return {
       overview,
       sections: allSections,
@@ -182,7 +214,8 @@ Provide detailed explanations that would help a student understand complex conce
       readingTime,
       totalTokens: totalTokensUsed,
       estimatedCost: Number(totalCost.toFixed(4)),
-      analysisTime: `${analysisTime}s`
+      analysisTime: `${analysisTime}s`,
+      generatedTitle
     };
 
   } catch (error) {

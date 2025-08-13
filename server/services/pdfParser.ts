@@ -47,8 +47,8 @@ export async function parsePDF(filePath: string): Promise<ParsedPaperContent> {
       fullText += pageText + '\n';
     }
 
-    // Much better title extraction focusing on the FIRST page only
-    let title = "Research Paper";
+    // Skip PDF title extraction - will generate content-based title instead
+    let title = ""; // Will be generated from content
     let authors = "Unknown Authors";
     
     if (data.pages && data.pages[0] && data.pages[0].content) {

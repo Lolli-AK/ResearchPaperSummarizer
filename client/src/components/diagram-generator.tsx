@@ -9,9 +9,53 @@ interface DiagramGeneratorProps {
   paperTitle: string;
 }
 
+// Track which diagram types have been used
+const usedDiagramTypes = new Set<string>();
+
 export function DiagramGenerator({ sectionTitle, sectionContent, keyConcepts, paperTitle }: DiagramGeneratorProps) {
   const svgRef = useRef<SVGSVGElement>(null);
-  const [diagramType, setDiagramType] = useState<'flowchart' | 'concept' | 'architecture'>('flowchart');
+  
+  // Determine unique diagram type for this section
+  const getDiagramType = (): 'flowchart' | 'concept' | 'architecture' | null => {
+    const diagramKey = `${sectionTitle}-${paperTitle}`;
+    
+    // Check if we've already generated a diagram for this exact section
+    if (usedDiagramTypes.has(diagramKey)) {
+      return null; // Don't generate duplicate
+    }
+    
+    // Assign diagram types based on content and what hasn't been used
+    if (sectionTitle.toLowerCase().includes('attention') || 
+        sectionTitle.toLowerCase().includes('transformer') ||
+        sectionTitle.toLowerCase().includes('architecture')) {
+      if (!usedDiagramTypes.has('architecture')) {
+        usedDiagramTypes.add('architecture');
+        usedDiagramTypes.add(diagramKey);
+        return 'architecture';
+      }
+    }
+    
+    if (sectionTitle.toLowerCase().includes('method') ||
+        sectionTitle.toLowerCase().includes('approach') ||
+        sectionTitle.toLowerCase().includes('algorithm')) {
+      if (!usedDiagramTypes.has('flowchart')) {
+        usedDiagramTypes.add('flowchart');
+        usedDiagramTypes.add(diagramKey);
+        return 'flowchart';
+      }
+    }
+    
+    // Default to concept map if available
+    if (!usedDiagramTypes.has('concept')) {
+      usedDiagramTypes.add('concept');
+      usedDiagramTypes.add(diagramKey);
+      return 'concept';
+    }
+    
+    return null; // All diagram types used
+  };
+  
+  const [diagramType, setDiagramType] = useState<'flowchart' | 'concept' | 'architecture' | null>(getDiagramType());
 
   const generateTransformerDiagram = useCallback(() => {
     if (!svgRef.current) return;
