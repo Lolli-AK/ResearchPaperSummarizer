@@ -35,6 +35,8 @@ export function PaperAnalysis({ analysisData }: PaperAnalysisProps) {
 
   const exportAnalysis = async () => {
     console.log('Generating PDF export...');
+    console.log('Paper title:', paper.title);
+    console.log('Title length:', paper.title.length);
     
     try {
       // Create a new PDF document
@@ -44,12 +46,32 @@ export function PaperAnalysis({ analysisData }: PaperAnalysisProps) {
       const margin = 40;
       let yPosition = margin;
       
-      // Title page
-      pdf.setFontSize(24);
+      // Title page - Extract proper title from potentially corrupted data
+      let cleanTitle = paper.title;
+      
+      // If title is too long, it's likely the entire paper content - extract a better title
+      if (paper.title.length > 200) {
+        // Try to find a proper title by looking for patterns
+        const titleMatch = paper.title.match(/^([^.!?]{10,150}[.!?])/);
+        if (titleMatch) {
+          cleanTitle = titleMatch[1].trim();
+        } else {
+          // Fallback: take first meaningful sentence
+          cleanTitle = paper.title.substring(0, 80).trim() + '...';
+        }
+      }
+      
+      // Add a header
+      pdf.setFontSize(16);
       pdf.setFont('helvetica', 'bold');
-      const titleLines = pdf.splitTextToSize(paper.title, pageWidth - 2 * margin);
+      pdf.text('AI Research Paper Analysis', margin, yPosition);
+      yPosition += 30;
+      
+      pdf.setFontSize(18);
+      pdf.setFont('helvetica', 'bold');
+      const titleLines = pdf.splitTextToSize(cleanTitle, pageWidth - 2 * margin);
       pdf.text(titleLines, margin, yPosition);
-      yPosition += titleLines.length * 30;
+      yPosition += titleLines.length * 22;
       
       // Authors
       yPosition += 20;
