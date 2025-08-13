@@ -23,6 +23,7 @@ interface AnalysisData {
     totalCost: string;
     createdAt: string;
   };
+  generatedTitle?: string;
 }
 
 export default function Home() {

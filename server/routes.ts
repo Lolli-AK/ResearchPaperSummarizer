@@ -120,7 +120,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           readingTime: analysis.readingTime,
           analysisTime: analysis.analysisTime,
           totalCost: analysis.totalCost,
-        }
+        },
+        generatedTitle: analysisResult.generatedTitle || paper.title,
       });
 
     } catch (error) {

@@ -47,6 +47,7 @@ Preferred communication style: Simple, everyday language.
 3. **OpenAI Analysis Service** (`server/services/openai.ts`)
    - Uses GPT-4o for comprehensive paper analysis with chunking for large papers
    - Generates structured explanations and summaries
+   - **AI Title Generation**: Creates proper academic titles from content analysis instead of problematic PDF parsing
    - Calculates processing costs and complexity ratings
    - Handles papers exceeding token limits through intelligent text segmentation
 
@@ -59,8 +60,12 @@ Preferred communication style: Simple, everyday language.
 - **Upload Section**: Handles both file uploads and arXiv URL input with example papers
 - **Processing Status**: Real-time progress tracking with cost estimation
 - **Paper Analysis**: Displays structured analysis with sidebar navigation and export functionality
+  - **Editable Title Feature**: Users can customize AI-generated titles with edit/save/cancel functionality
+  - **Enhanced PDF Export**: Generates PDFs with website-matching format, colors, and embedded diagram placeholders
 - **Paper Sidebar**: Navigation for sections and key concepts visualization
-- **Diagram Generator**: SVG-based visual diagrams showing transformer architecture and concept maps
+- **Diagram Generator**: SVG-based visual diagrams with deduplication system
+  - **Unique Diagrams**: Prevents duplicate diagram types (architecture, flowchart, concept map) per paper
+  - **Smart Allocation**: Each section gets a unique diagram type to avoid repetition
 
 ## Data Flow
 
