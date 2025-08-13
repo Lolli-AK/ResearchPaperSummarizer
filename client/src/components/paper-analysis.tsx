@@ -50,14 +50,34 @@ export function PaperAnalysis({ analysisData }: PaperAnalysisProps) {
       let cleanTitle = paper.title;
       
       // If title is too long, it's likely the entire paper content - extract a better title
-      if (paper.title.length > 200) {
-        // Try to find a proper title by looking for patterns
-        const titleMatch = paper.title.match(/^([^.!?]{10,150}[.!?])/);
-        if (titleMatch) {
-          cleanTitle = titleMatch[1].trim();
-        } else {
-          // Fallback: take first meaningful sentence
-          cleanTitle = paper.title.substring(0, 80).trim() + '...';
+      if (paper.title.length > 100) {
+        // Look for the actual title pattern at the beginning
+        const titlePatterns = [
+          /^([A-Z][^.!?]{10,80}(?:\.|:|!|\?))/,  // Title ending with punctuation
+          /^([A-Z][^.!?]{10,80})/,               // Title without punctuation
+          /^(.{10,80}?)(?:\s+Abstract|$)/i       // Title before "Abstract"
+        ];
+        
+        let found = false;
+        for (const pattern of titlePatterns) {
+          const match = paper.title.match(pattern);
+          if (match && match[1]) {
+            cleanTitle = match[1].trim();
+            // Remove common prefixes/suffixes
+            cleanTitle = cleanTitle.replace(/^(arXiv:|preprint|draft|submitted)/i, '').trim();
+            found = true;
+            break;
+          }
+        }
+        
+        if (!found) {
+          // Fallback: take first reasonable chunk
+          const firstSentence = paper.title.split(/[.!?]/)[0];
+          if (firstSentence && firstSentence.length <= 100) {
+            cleanTitle = firstSentence.trim();
+          } else {
+            cleanTitle = paper.title.substring(0, 60).trim() + '...';
+          }
         }
       }
       

@@ -47,52 +47,57 @@ export async function parsePDF(filePath: string): Promise<ParsedPaperContent> {
       fullText += pageText + '\n';
     }
 
-    // Better title extraction using first page structure
+    // Much better title extraction focusing on the FIRST page only
     let title = "Research Paper";
     let authors = "Unknown Authors";
     
     if (data.pages && data.pages[0] && data.pages[0].content) {
       const firstPage = data.pages[0].content;
       
-      // Sort by vertical position (y coordinate) to get logical reading order
-      const sortedContent = firstPage
-        .filter((item: any) => item.str && item.str.trim())
-        .sort((a: any, b: any) => b.y - a.y); // Top to bottom
+      // Get only the very top elements of the first page (where title actually is)
+      const topElements = firstPage
+        .filter((item: any) => item.str && item.str.trim() && item.str.trim().length > 3)
+        .sort((a: any, b: any) => b.y - a.y) // Sort by position (top to bottom)
+        .slice(0, 20); // Look at only first 20 text elements
       
-      // Look for title in first few text blocks (usually largest font)
-      const titleCandidates = sortedContent
-        .slice(0, 10) // Check first 10 text elements
-        .filter((item: any) => {
-          const text = item.str.trim();
-          return text.length > 5 && 
-                 text.length < 150 && 
-                 !text.toLowerCase().includes('arxiv') &&
-                 !text.toLowerCase().includes('preprint') &&
-                 !text.toLowerCase().includes('abstract') &&
-                 !text.match(/^\d+$/) && // Not just numbers
-                 !text.match(/^[A-Z]{2,}$/) && // Not just uppercase abbreviations
-                 text.split(' ').length > 1; // More than one word
-        });
-      
-      if (titleCandidates.length > 0) {
-        // Take the first reasonable candidate
-        title = titleCandidates[0].str.trim();
+      // Find title by looking for meaningful text in large font at the top
+      for (const item of topElements) {
+        const text = item.str.trim();
+        const isLikelyTitle = text.length >= 10 && 
+                             text.length <= 100 && 
+                             !text.toLowerCase().includes('arxiv') &&
+                             !text.toLowerCase().includes('preprint') &&
+                             !text.toLowerCase().includes('abstract') &&
+                             !text.toLowerCase().includes('cs.') && // arXiv categories
+                             !text.match(/^\d{4}\.\d{4,5}/) && // arXiv ID pattern
+                             !text.match(/^[A-Z]{2,}$/) && // Not just abbreviations
+                             !text.match(/^\d+$/) && // Not just numbers
+                             !text.match(/^[^a-zA-Z]*$/) && // Must contain letters
+                             text.split(' ').length >= 2 && // At least 2 words
+                             text.split(' ').length <= 15; // Not too many words
+        
+        if (isLikelyTitle) {
+          title = text;
+          break; // Take the first match
+        }
       }
       
-      // Look for authors (usually after title, smaller font)
-      const authorCandidates = sortedContent
-        .slice(1, 15)
-        .filter((item: any) => {
-          const text = item.str.trim();
-          return text.length > 3 && 
-                 text.length < 200 &&
-                 !text.toLowerCase().includes('abstract') &&
-                 !text.toLowerCase().includes('university') &&
-                 (text.includes(' ') || text.includes(','));
-        });
-      
-      if (authorCandidates.length > 0) {
-        authors = authorCandidates[0].str.trim();
+      // Simple author detection - look for names after title
+      for (let i = 1; i < Math.min(topElements.length, 10); i++) {
+        const text = topElements[i].str.trim();
+        const isLikelyAuthor = text.length > 3 && 
+                              text.length < 100 &&
+                              !text.toLowerCase().includes('abstract') &&
+                              !text.toLowerCase().includes('arxiv') &&
+                              (text.includes(' ') || text.includes(',')) &&
+                              !text.includes('©') && // Copyright symbols
+                              !text.includes('University') && // Skip affiliations for now
+                              text.split(' ').length <= 8; // Reasonable name length
+        
+        if (isLikelyAuthor) {
+          authors = text;
+          break;
+        }
       }
     }
 
