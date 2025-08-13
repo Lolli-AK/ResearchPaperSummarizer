@@ -182,13 +182,47 @@ export function PaperAnalysis({ analysisData }: PaperAnalysisProps) {
         yPosition += 25; // Space between sections
       }
       
-      // Generate filename
-      const safeTitle = paper.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+      // Add a final page with visual summary
+      pdf.addPage();
+      yPosition = margin;
+      
+      pdf.setFontSize(18);
+      pdf.setFont('helvetica', 'bold');
+      pdf.text('Visual Summary', margin, yPosition);
+      yPosition += 40;
+      
+      pdf.setFontSize(12);
+      pdf.setFont('helvetica', 'normal');
+      pdf.text('Key Concepts Flowchart:', margin, yPosition);
+      yPosition += 30;
+      
+      // Create a simple text-based flowchart for concepts
+      const concepts = analysis.keyConcepts.slice(0, 8);
+      concepts.forEach((concept, index) => {
+        const x = margin + (index % 2) * 250;
+        const y = yPosition + Math.floor(index / 2) * 60;
+        
+        // Draw concept box
+        pdf.rect(x, y - 15, 200, 30);
+        pdf.text(concept.length > 25 ? concept.substring(0, 25) + '...' : concept, x + 10, y);
+        
+        // Draw arrow to next concept
+        if (index < concepts.length - 1) {
+          pdf.line(x + 200, y, x + 240, y);
+          pdf.text('→', x + 220, y + 5);
+        }
+      });
+      
+      // Generate filename with cleaner title
+      let safeTitle = cleanTitle.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+      if (safeTitle.length > 50) {
+        safeTitle = safeTitle.substring(0, 50);
+      }
       const filename = `${safeTitle}_analysis.pdf`;
       
       // Save the PDF
       pdf.save(filename);
-      console.log('PDF generated successfully!');
+      console.log('PDF generated successfully with diagrams!');
       
     } catch (error) {
       console.error('PDF generation failed:', error);
@@ -362,17 +396,13 @@ export function PaperAnalysis({ analysisData }: PaperAnalysisProps) {
                 </div>
               )}
 
-              {/* Add diagram for sections with key concepts or technical content */}
-              {(section.keyConcepts || section.title.toLowerCase().includes('attention') || 
-                section.title.toLowerCase().includes('transformer') || 
-                section.title.toLowerCase().includes('architecture')) && (
-                <DiagramGenerator 
-                  sectionTitle={section.title}
-                  sectionContent={section.explanation || section.originalContent || ""}
-                  keyConcepts={section.keyConcepts || analysis.keyConcepts.slice(0, 6)}
-                  paperTitle={paper.title}
-                />
-              )}
+              {/* Add diagrams for all sections - flowcharts help visualize any content */}
+              <DiagramGenerator 
+                sectionTitle={section.title}
+                sectionContent={section.explanation || section.originalContent || ""}
+                keyConcepts={section.keyConcepts || analysis.keyConcepts.slice(0, 6)}
+                paperTitle={paper.title}
+              />
             </CardContent>
           </Card>
         ))}

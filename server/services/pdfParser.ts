@@ -47,30 +47,52 @@ export async function parsePDF(filePath: string): Promise<ParsedPaperContent> {
       fullText += pageText + '\n';
     }
 
-    // Extract title (usually in the first few lines and often in larger font)
-    const lines = fullText.split('\n').filter(line => line.trim().length > 0);
-    let title = "Untitled Paper";
+    // Better title extraction using first page structure
+    let title = "Research Paper";
     let authors = "Unknown Authors";
-
-    // Try to identify title and authors from the first page
-    if (lines.length > 0) {
-      // Title is usually the first substantial line
-      const titleCandidate = lines.find(line => 
-        line.trim().length > 10 && 
-        !line.toLowerCase().includes('arxiv') &&
-        !line.toLowerCase().includes('abstract')
-      );
-      if (titleCandidate) {
-        title = titleCandidate.trim();
+    
+    if (data.pages && data.pages[0] && data.pages[0].content) {
+      const firstPage = data.pages[0].content;
+      
+      // Sort by vertical position (y coordinate) to get logical reading order
+      const sortedContent = firstPage
+        .filter((item: any) => item.str && item.str.trim())
+        .sort((a: any, b: any) => b.y - a.y); // Top to bottom
+      
+      // Look for title in first few text blocks (usually largest font)
+      const titleCandidates = sortedContent
+        .slice(0, 10) // Check first 10 text elements
+        .filter((item: any) => {
+          const text = item.str.trim();
+          return text.length > 5 && 
+                 text.length < 150 && 
+                 !text.toLowerCase().includes('arxiv') &&
+                 !text.toLowerCase().includes('preprint') &&
+                 !text.toLowerCase().includes('abstract') &&
+                 !text.match(/^\d+$/) && // Not just numbers
+                 !text.match(/^[A-Z]{2,}$/) && // Not just uppercase abbreviations
+                 text.split(' ').length > 1; // More than one word
+        });
+      
+      if (titleCandidates.length > 0) {
+        // Take the first reasonable candidate
+        title = titleCandidates[0].str.trim();
       }
-
-      // Authors usually follow the title
-      const titleIndex = lines.findIndex(line => line.includes(title));
-      if (titleIndex >= 0 && titleIndex < lines.length - 1) {
-        const authorCandidate = lines[titleIndex + 1];
-        if (authorCandidate && authorCandidate.length > 5 && authorCandidate.length < 200) {
-          authors = authorCandidate.trim();
-        }
+      
+      // Look for authors (usually after title, smaller font)
+      const authorCandidates = sortedContent
+        .slice(1, 15)
+        .filter((item: any) => {
+          const text = item.str.trim();
+          return text.length > 3 && 
+                 text.length < 200 &&
+                 !text.toLowerCase().includes('abstract') &&
+                 !text.toLowerCase().includes('university') &&
+                 (text.includes(' ') || text.includes(','));
+        });
+      
+      if (authorCandidates.length > 0) {
+        authors = authorCandidates[0].str.trim();
       }
     }
 
