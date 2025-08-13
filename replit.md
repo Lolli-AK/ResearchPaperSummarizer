@@ -45,9 +45,10 @@ Preferred communication style: Simple, everyday language.
    - Validates arXiv URL formats
 
 3. **OpenAI Analysis Service** (`server/services/openai.ts`)
-   - Uses GPT-4.1 for comprehensive paper analysis
+   - Uses GPT-4o for comprehensive paper analysis with chunking for large papers
    - Generates structured explanations and summaries
    - Calculates processing costs and complexity ratings
+   - Handles papers exceeding token limits through intelligent text segmentation
 
 ### Database Schema
 - **Users**: User accounts with credit system for API usage tracking
@@ -55,10 +56,11 @@ Preferred communication style: Simple, everyday language.
 - **Analyses**: Structured analysis results including sections, concepts, and costs
 
 ### Frontend Components
-- **Upload Section**: Handles both file uploads and arXiv URL input
+- **Upload Section**: Handles both file uploads and arXiv URL input with example papers
 - **Processing Status**: Real-time progress tracking with cost estimation
-- **Paper Analysis**: Displays structured analysis with sidebar navigation
+- **Paper Analysis**: Displays structured analysis with sidebar navigation and export functionality
 - **Paper Sidebar**: Navigation for sections and key concepts visualization
+- **Diagram Generator**: SVG-based visual diagrams showing transformer architecture and concept maps
 
 ## Data Flow
 

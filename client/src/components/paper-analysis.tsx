@@ -296,7 +296,7 @@ export function PaperAnalysis({ analysisData }: PaperAnalysisProps) {
           </div>
 
           <div className="flex flex-wrap gap-3">
-            <Button className="bg-white text-academic-blue hover:bg-gray-100">
+            <Button onClick={exportAnalysis} className="bg-white text-academic-blue hover:bg-gray-100">
               <i className="fas fa-download mr-2"></i>
               Export Full Analysis
             </Button>
