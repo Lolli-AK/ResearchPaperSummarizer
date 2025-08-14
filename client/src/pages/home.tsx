@@ -24,6 +24,7 @@ interface AnalysisData {
     createdAt: string;
   };
   generatedTitle?: string;
+  generatedSubtitle?: string;
 }
 
 export default function Home() {

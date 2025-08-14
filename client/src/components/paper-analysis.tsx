@@ -29,6 +29,7 @@ interface PaperAnalysisProps {
       createdAt: string;
     };
     generatedTitle?: string;
+    generatedSubtitle?: string;
   };
 }
 
@@ -37,7 +38,7 @@ export function PaperAnalysis({ analysisData }: PaperAnalysisProps) {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [editedTitle, setEditedTitle] = useState("");
   const [displayTitle, setDisplayTitle] = useState("");
-  const { paper, analysis, generatedTitle } = analysisData;
+  const { paper, analysis, generatedTitle, generatedSubtitle } = analysisData;
 
   // Initialize display title
   useEffect(() => {
@@ -217,21 +218,86 @@ export function PaperAnalysis({ analysisData }: PaperAnalysisProps) {
           const diagramTypes = ['Architecture Diagram', 'Concept Map', 'Process Flowchart'];
           const diagramType = diagramTypes[index];
           
-          // Draw sophisticated diagram elements
-          pdf.setFillColor(59, 130, 246);
-          pdf.rect(margin + 20, yPosition + 20, 80, 80, 'F');
-          
-          pdf.setFillColor(16, 185, 129);
-          pdf.rect(margin + 120, yPosition + 30, 60, 60, 'F');
-          
-          pdf.setFillColor(251, 146, 60);
-          pdf.rect(margin + 200, yPosition + 40, 40, 40, 'F');
-          
-          // Add connecting lines
-          pdf.setDrawColor(107, 114, 128);
-          pdf.setLineWidth(2);
-          pdf.line(margin + 100, yPosition + 60, margin + 120, yPosition + 60);
-          pdf.line(margin + 180, yPosition + 60, margin + 200, yPosition + 60);
+          // Draw meaningful diagram based on type
+          if (diagramType === 'Architecture Diagram') {
+            // Draw system architecture
+            pdf.setFillColor(59, 130, 246);
+            pdf.rect(margin + 20, yPosition + 20, 100, 40, 'F');
+            pdf.setTextColor(255, 255, 255);
+            pdf.setFontSize(8);
+            pdf.text('User Interface', margin + 35, yPosition + 45);
+            
+            pdf.setFillColor(16, 185, 129);
+            pdf.rect(margin + 20, yPosition + 70, 100, 40, 'F');
+            pdf.text('Application Layer', margin + 30, yPosition + 95);
+            
+            pdf.setFillColor(251, 146, 60);
+            pdf.rect(margin + 140, yPosition + 45, 80, 40, 'F');
+            pdf.text('Database', margin + 165, yPosition + 70);
+            
+            // Draw arrows
+            pdf.setDrawColor(107, 114, 128);
+            pdf.setLineWidth(2);
+            pdf.line(margin + 120, yPosition + 90, margin + 140, yPosition + 65);
+            
+          } else if (diagramType === 'Concept Map') {
+            // Draw concept relationships
+            pdf.setFillColor(139, 92, 246);
+            pdf.circle(margin + 70, yPosition + 40, 25, 'F');
+            pdf.setTextColor(255, 255, 255);
+            pdf.setFontSize(7);
+            pdf.text('Core', margin + 60, yPosition + 45);
+            
+            pdf.setFillColor(236, 72, 153);
+            pdf.circle(margin + 150, yPosition + 30, 20, 'F');
+            pdf.text('Input', margin + 140, yPosition + 35);
+            
+            pdf.setFillColor(34, 197, 94);
+            pdf.circle(margin + 150, yPosition + 70, 20, 'F');
+            pdf.text('Output', margin + 138, yPosition + 75);
+            
+            // Connect with lines
+            pdf.setDrawColor(107, 114, 128);
+            pdf.setLineWidth(1.5);
+            pdf.line(margin + 95, yPosition + 35, margin + 130, yPosition + 30);
+            pdf.line(margin + 95, yPosition + 55, margin + 130, yPosition + 70);
+            
+          } else { // Process Flowchart
+            // Draw process flow
+            pdf.setFillColor(34, 197, 94);
+            pdf.rect(margin + 20, yPosition + 30, 60, 25, 'F');
+            pdf.setTextColor(255, 255, 255);
+            pdf.setFontSize(7);
+            pdf.text('Start', margin + 45, yPosition + 45);
+            
+            pdf.setFillColor(59, 130, 246);
+            // Diamond shape for decision
+            const points = [
+              [margin + 120, yPosition + 25],
+              [margin + 150, yPosition + 42],
+              [margin + 120, yPosition + 60],
+              [margin + 90, yPosition + 42]
+            ];
+            pdf.setFillColor(59, 130, 246);
+            for (let i = 0; i < points.length; i++) {
+              const next = (i + 1) % points.length;
+              if (i === 0) pdf.moveTo(points[i][0], points[i][1]);
+              pdf.lineTo(points[next][0], points[next][1]);
+            }
+            pdf.fill();
+            pdf.setTextColor(255, 255, 255);
+            pdf.text('Process', margin + 110, yPosition + 45);
+            
+            pdf.setFillColor(251, 146, 60);
+            pdf.rect(margin + 170, yPosition + 30, 50, 25, 'F');
+            pdf.text('End', margin + 190, yPosition + 45);
+            
+            // Connect with arrows
+            pdf.setDrawColor(107, 114, 128);
+            pdf.setLineWidth(2);
+            pdf.line(margin + 80, yPosition + 42, margin + 90, yPosition + 42);
+            pdf.line(margin + 150, yPosition + 42, margin + 170, yPosition + 42);
+          }
           
           pdf.setTextColor(0, 0, 0);
           pdf.setFontSize(12);
@@ -377,9 +443,15 @@ export function PaperAnalysis({ analysisData }: PaperAnalysisProps) {
                   By {paper.authors || 'Unknown Authors'}
                 </p>
                 
+                {generatedSubtitle && (
+                  <p className="text-lg text-gray-700 dark:text-gray-300 mt-3 font-medium italic">
+                    {generatedSubtitle}
+                  </p>
+                )}
+                
                 {generatedTitle && (
-                  <p className="text-sm text-blue-600 dark:text-blue-400 mt-1">
-                    ✨ AI-generated title available - click edit to customize
+                  <p className="text-sm text-blue-600 dark:text-blue-400 mt-2">
+                    ✨ AI-generated title and subtitle available - click edit to customize
                   </p>
                 )}
               </div>

@@ -76,7 +76,7 @@ export async function analyzePaperWithGPT(
   paperContent: string,
   originalTitle: string,
   authors?: string
-): Promise<PaperAnalysisResult & { generatedTitle: string }> {
+): Promise<PaperAnalysisResult & { generatedTitle: string; generatedSubtitle: string }> {
   const startTime = Date.now();
 
   try {
@@ -180,29 +180,54 @@ Provide detailed explanations that would help a student understand complex conce
 
     const analysisTime = ((Date.now() - startTime) / 1000).toFixed(1); // seconds
 
-    // Extract generated title from the first chunk if available
+    // Generate both title and subtitle from the analysis
     let generatedTitle = originalTitle || "Research Paper Analysis";
+    let generatedSubtitle = "";
+    
     if (allSections.length > 0) {
-      // Try to create a better title from the analysis
-      const firstResponse = await openai.chat.completions.create({
+      // Generate title and subtitle in one call
+      const titleResponse = await openai.chat.completions.create({
         model: "gpt-4o",
         messages: [
           {
             role: "system",
-            content: "Generate a clear, concise academic paper title (5-15 words) based on the content analysis. Respond with just the title."
+            content: `Generate both a title and subtitle for an academic paper based on the content analysis. 
+            
+            Respond in JSON format:
+            {
+              "title": "clear, concise academic paper title (5-15 words)",
+              "subtitle": "a more detailed, rhetorical sentence explaining how the paper presents its topic (15-25 words)"
+            }`
           },
           {
             role: "user", 
-            content: `Create a proper title for this research paper based on this analysis:\n\nOverview: ${overview}\n\nKey concepts: ${keyConcepts.slice(0, 5).join(', ')}`
+            content: `Create a proper title and subtitle for this research paper:
+
+Overview: ${overview}
+
+Key concepts: ${keyConcepts.slice(0, 8).join(', ')}
+
+Original title: ${originalTitle}
+
+The subtitle should describe the rhetorical approach or presentation style of the paper - how it frames or presents its main topic.`
           }
         ],
-        max_tokens: 50
+        response_format: { type: "json_object" },
+        max_tokens: 150
       });
       
-      const titleResponse = firstResponse.choices[0].message.content?.trim();
-      if (titleResponse && titleResponse.length > 10 && titleResponse.length < 150) {
-        generatedTitle = titleResponse;
-        console.log("AI-generated title:", generatedTitle);
+      try {
+        const titleData = JSON.parse(titleResponse.choices[0].message.content || '{}');
+        if (titleData.title && titleData.title.length > 10 && titleData.title.length < 150) {
+          generatedTitle = titleData.title;
+          console.log("AI-generated title:", generatedTitle);
+        }
+        if (titleData.subtitle && titleData.subtitle.length > 10 && titleData.subtitle.length < 200) {
+          generatedSubtitle = titleData.subtitle;
+          console.log("AI-generated subtitle:", generatedSubtitle);
+        }
+      } catch (error) {
+        console.warn("Failed to parse title/subtitle response:", error);
       }
     }
 
@@ -215,7 +240,8 @@ Provide detailed explanations that would help a student understand complex conce
       totalTokens: totalTokensUsed,
       estimatedCost: Number(totalCost.toFixed(4)),
       analysisTime: `${analysisTime}s`,
-      generatedTitle
+      generatedTitle,
+      generatedSubtitle
     };
 
   } catch (error) {

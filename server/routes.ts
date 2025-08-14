@@ -122,6 +122,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           totalCost: analysis.totalCost,
         },
         generatedTitle: analysisResult.generatedTitle || paper.title,
+        generatedSubtitle: analysisResult.generatedSubtitle || "",
       });
 
     } catch (error) {
