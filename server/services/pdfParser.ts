@@ -47,93 +47,9 @@ export async function parsePDF(filePath: string): Promise<ParsedPaperContent> {
       fullText += pageText + '\n';
     }
 
-    // Skip PDF title extraction - will generate content-based title instead
-    let title = ""; // Will be generated from content
-    let authors = "Unknown Authors";
-    
-    if (data.pages && data.pages[0] && data.pages[0].content) {
-      const firstPage = data.pages[0].content;
-      
-      // Get only the very top elements of the first page (where title actually is)
-      const topElements = firstPage
-        .filter((item: any) => item.str && item.str.trim() && item.str.trim().length > 3)
-        .sort((a: any, b: any) => b.y - a.y) // Sort by position (top to bottom)
-        .slice(0, 20); // Look at only first 20 text elements
-      
-      // Debug: log the top elements to see what we're working with
-      console.log("Top elements from PDF first page:");
-      topElements.slice(0, 8).forEach((item, i) => {
-        console.log(`${i}: "${item.str.trim()}" (length: ${item.str.trim().length})`);
-      });
-      
-      // Find title by looking for meaningful text in large font at the top
-      // Look for the LARGEST text elements first (titles are usually biggest)
-      const elementsWithSize = topElements.map((item: any) => ({
-        ...item,
-        textSize: item.height || 12 // Use height as proxy for font size
-      })).sort((a: any, b: any) => b.textSize - a.textSize);
-      
-      console.log("Elements sorted by size:");
-      elementsWithSize.slice(0, 5).forEach((item: any, i) => {
-        console.log(`${i}: "${item.str.trim()}" (size: ${item.textSize}, length: ${item.str.trim().length})`);
-      });
-      
-      // Try to find title among the largest text elements
-      for (const item of elementsWithSize) {
-        const text = item.str.trim();
-        const isLikelyTitle = text.length >= 8 && 
-                             text.length <= 120 && 
-                             !text.toLowerCase().includes('arxiv') &&
-                             !text.toLowerCase().includes('preprint') &&
-                             !text.toLowerCase().includes('abstract') &&
-                             !text.toLowerCase().includes('cs.') && // arXiv categories
-                             !text.toLowerCase().includes('submitted') &&
-                             !text.toLowerCase().includes('conference') &&
-                             !text.match(/^\d{4}\.\d{4,5}/) && // arXiv ID pattern
-                             !text.match(/^[A-Z]{2,}$/) && // Not just abbreviations  
-                             !text.match(/^\d+$/) && // Not just numbers
-                             !text.match(/^[^a-zA-Z]*$/) && // Must contain letters
-                             !text.match(/^\s*\d+\s*$/) && // Not just page numbers
-                             text.split(' ').length >= 2 && // At least 2 words
-                             text.split(' ').length <= 20; // Not too many words
-        
-        if (isLikelyTitle) {
-          console.log("Selected PDF title:", text);
-          title = text;
-          break; // Take the first match
-        }
-      }
-      
-      // If still no title found, try the position-based approach  
-      if (title === "Research Paper") {
-        for (const item of topElements.slice(0, 10)) {
-          const text = item.str.trim();
-          if (text.length >= 8 && text.length <= 120 && text.split(' ').length >= 2) {
-            console.log("Fallback title selection:", text);
-            title = text;
-            break;
-          }
-        }
-      }
-      
-      // Simple author detection - look for names after title
-      for (let i = 1; i < Math.min(topElements.length, 10); i++) {
-        const text = topElements[i].str.trim();
-        const isLikelyAuthor = text.length > 3 && 
-                              text.length < 100 &&
-                              !text.toLowerCase().includes('abstract') &&
-                              !text.toLowerCase().includes('arxiv') &&
-                              (text.includes(' ') || text.includes(',')) &&
-                              !text.includes('©') && // Copyright symbols
-                              !text.includes('University') && // Skip affiliations for now
-                              text.split(' ').length <= 8; // Reasonable name length
-        
-        if (isLikelyAuthor) {
-          authors = text;
-          break;
-        }
-      }
-    }
+    // Skip PDF parsing for title/authors - AI will generate proper ones
+    let title = "Research Paper"; // Will be generated from content
+    let authors = "Unknown Authors"; // Will be AI-generated or user-editable
 
     // Extract abstract
     let abstract = "";

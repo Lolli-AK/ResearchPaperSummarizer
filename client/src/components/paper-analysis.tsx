@@ -36,18 +36,24 @@ interface PaperAnalysisProps {
 export function PaperAnalysis({ analysisData }: PaperAnalysisProps) {
   const [activeSection, setActiveSection] = useState("overview");
   const [isEditingTitle, setIsEditingTitle] = useState(false);
+  const [isEditingSubtitle, setIsEditingSubtitle] = useState(false);
   const [editedTitle, setEditedTitle] = useState("");
+  const [editedSubtitle, setEditedSubtitle] = useState("");
   const [displayTitle, setDisplayTitle] = useState("");
+  const [displaySubtitle, setDisplaySubtitle] = useState("");
   const { paper, analysis, generatedTitle, generatedSubtitle } = analysisData;
 
-  // Initialize display title
+  // Initialize display title and subtitle
   useEffect(() => {
     const title = generatedTitle || paper.title;
+    const subtitle = generatedSubtitle || "";
     setDisplayTitle(title);
     setEditedTitle(title);
-  }, [generatedTitle, paper.title]);
+    setDisplaySubtitle(subtitle);
+    setEditedSubtitle(subtitle);
+  }, [generatedTitle, generatedSubtitle, paper.title]);
 
-  const handleStartEditing = () => {
+  const handleStartEditingTitle = () => {
     setIsEditingTitle(true);
     setEditedTitle(displayTitle);
   };
@@ -57,9 +63,24 @@ export function PaperAnalysis({ analysisData }: PaperAnalysisProps) {
     setIsEditingTitle(false);
   };
 
-  const handleCancelEdit = () => {
+  const handleCancelEditTitle = () => {
     setEditedTitle(displayTitle);
     setIsEditingTitle(false);
+  };
+
+  const handleStartEditingSubtitle = () => {
+    setIsEditingSubtitle(true);
+    setEditedSubtitle(displaySubtitle);
+  };
+
+  const handleSaveSubtitle = () => {
+    setDisplaySubtitle(editedSubtitle);
+    setIsEditingSubtitle(false);
+  };
+
+  const handleCancelEditSubtitle = () => {
+    setEditedSubtitle(displaySubtitle);
+    setIsEditingSubtitle(false);
   };
 
   const generateEnhancedPDF = async () => {
@@ -424,7 +445,7 @@ export function PaperAnalysis({ analysisData }: PaperAnalysisProps) {
                     <Button size="sm" onClick={handleSaveTitle}>
                       <Check className="h-4 w-4" />
                     </Button>
-                    <Button size="sm" variant="outline" onClick={handleCancelEdit}>
+                    <Button size="sm" variant="outline" onClick={handleCancelEditTitle}>
                       <X className="h-4 w-4" />
                     </Button>
                   </div>
@@ -433,25 +454,58 @@ export function PaperAnalysis({ analysisData }: PaperAnalysisProps) {
                     <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-200">
                       {displayTitle}
                     </h1>
-                    <Button size="sm" variant="ghost" onClick={handleStartEditing}>
+                    <Button size="sm" variant="ghost" onClick={handleStartEditingTitle}>
                       <Edit3 className="h-4 w-4" />
                     </Button>
                   </div>
                 )}
                 
                 <p className="text-gray-600 dark:text-gray-400 mt-2">
-                  By {paper.authors || 'Unknown Authors'}
+                  By Unknown Authors
                 </p>
                 
-                {generatedSubtitle && (
-                  <p className="text-lg text-gray-700 dark:text-gray-300 mt-3 font-medium italic">
-                    {generatedSubtitle}
-                  </p>
+                {isEditingSubtitle ? (
+                  <div className="flex items-center gap-2 mt-3">
+                    <Input
+                      value={editedSubtitle}
+                      onChange={(e) => setEditedSubtitle(e.target.value)}
+                      className="text-lg italic"
+                      placeholder="Enter paper subtitle..."
+                    />
+                    <Button size="sm" onClick={handleSaveSubtitle}>
+                      <Check className="h-4 w-4" />
+                    </Button>
+                    <Button size="sm" variant="outline" onClick={handleCancelEditSubtitle}>
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="mt-3">
+                    {displaySubtitle ? (
+                      <div className="flex items-center gap-2">
+                        <p className="text-lg text-gray-700 dark:text-gray-300 font-medium italic">
+                          {displaySubtitle}
+                        </p>
+                        <Button size="sm" variant="ghost" onClick={handleStartEditingSubtitle}>
+                          <Edit3 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <Button 
+                        size="sm" 
+                        variant="outline" 
+                        onClick={handleStartEditingSubtitle}
+                        className="text-sm"
+                      >
+                        + Add Subtitle
+                      </Button>
+                    )}
+                  </div>
                 )}
                 
                 {generatedTitle && (
                   <p className="text-sm text-blue-600 dark:text-blue-400 mt-2">
-                    ✨ AI-generated title and subtitle available - click edit to customize
+                    ✨ AI-generated title and subtitle - click edit icons to customize
                   </p>
                 )}
               </div>
