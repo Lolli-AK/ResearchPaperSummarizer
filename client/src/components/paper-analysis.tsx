@@ -103,7 +103,7 @@ export function PaperAnalysis({ analysisData }: PaperAnalysisProps) {
 
       // Cover Page with Colors
       pdf.setFillColor(59, 130, 246); // Blue background
-      pdf.rect(0, 0, pageWidth, 120, 'F');
+      pdf.rect(0, 0, pageWidth, 140, 'F');
       
       pdf.setTextColor(255, 255, 255);
       pdf.setFontSize(24);
@@ -111,13 +111,22 @@ export function PaperAnalysis({ analysisData }: PaperAnalysisProps) {
       
       // Use the display title (editable)
       const titleLines = pdf.splitTextToSize(displayTitle, pageWidth - 80);
-      pdf.text(titleLines, 40, 60);
+      pdf.text(titleLines, 40, 50);
+      
+      // Add subtitle if it exists
+      if (displaySubtitle) {
+        pdf.setFontSize(16);
+        pdf.setFont('helvetica', 'italic');
+        const subtitleLines = pdf.splitTextToSize(displaySubtitle, pageWidth - 80);
+        const titleHeight = titleLines.length * 28;
+        pdf.text(subtitleLines, 40, 50 + titleHeight + 10);
+      }
       
       pdf.setFontSize(14);
       pdf.setFont('helvetica', 'normal');
-      pdf.text(`Authors: ${paper.authors || 'Unknown'}`, 40, 100);
+      pdf.text(`Authors: Unknown Authors`, 40, 120);
       
-      yPosition = 160;
+      yPosition = 180;
       pdf.setTextColor(0, 0, 0);
 
       // Overview Section with colored header
